@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<nav th:fragment="topnav" class="navbar px-4 py-2 d-flex align-items-center justify-content-between">
+
+    <!-- Left: Toggle & Page Info -->
+    <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-sm" id="sidebarToggle" title="Thu gọn / Mở rộng menu">
+            <i class="bi bi-list fs-5"></i>
+        </button>
+        <div class="d-none d-md-flex align-items-center gap-2">
+            <span class="badge rounded-pill bg-light text-secondary border px-3 py-2 fw-medium">
+                <i class="bi bi-calendar3 me-1 text-warning"></i>
+                <span th:text="${#temporals.format(#temporals.createNow(), 'EEEE, dd/MM/yyyy')}">Thứ Hai, 19/10/2026</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Center: Quick Actions -->
+    <div class="d-none d-lg-flex align-items-center gap-2">
+        <a th:href="@{/invoices/create}" class="nav-quick-btn pos">
+            <i class="bi bi-plus-circle-fill"></i>
+            <span>Tạo hóa đơn</span>
+        </a>
+        <a th:href="@{/tables}" class="nav-quick-btn tables">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+            <span>Sơ đồ bàn</span>
+        </a>
+        <a th:href="@{/ai}" class="nav-quick-btn ai">
+            <i class="bi bi-stars"></i>
+            <span>Trợ lý AI</span>
+        </a>
+    </div>
+
+    <!-- Right: Notifications & User Profile -->
+    <div class="d-flex align-items-center gap-3">
+
+        <!-- Flash alerts (if any) -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show py-1 px-3 mb-0 small d-flex align-items-center gap-1 shadow-sm">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close btn-close-sm ms-2" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show py-1 px-3 mb-0 small d-flex align-items-center gap-1 shadow-sm">
+            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close btn-close-sm ms-2" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- User profile pill -->
+        <div class="d-flex align-items-center gap-2 ps-2 border-start">
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                 style="width: 36px; height: 36px; background: linear-gradient(135deg, #FF6B00, #F59E0B); font-size: 0.9rem;">
+                <i class="bi bi-person-fill"></i>
+            </div>
+            <div class="d-none d-sm-block text-start">
+                <div class="fw-bold small text-dark" style="line-height: 1.2;" sec:authentication="name">Admin</div>
+                <div class="d-flex align-items-center gap-1 mt-1">
+                    <span sec:authorize="hasRole('ADMIN')" class="badge bg-danger" style="font-size: 0.65rem; padding: 2px 6px;">ADMIN</span>
+                    <span sec:authorize="hasRole('MANAGER')" class="badge bg-warning text-dark" style="font-size: 0.65rem; padding: 2px 6px;">QUẢN LÝ</span>
+                    <span sec:authorize="hasRole('STAFF')" class="badge bg-primary" style="font-size: 0.65rem; padding: 2px 6px;">NHÂN VIÊN</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</nav>
+</body>
+</html>

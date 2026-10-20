@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<nav th:fragment="sidebar(activePage)" id="sidebar" class="sidebar d-flex flex-column">
+
+    <!-- Brand Header -->
+    <div class="sidebar-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="brand-icon-box">
+                <i class="bi bi-cup-hot-fill"></i>
+            </div>
+            <div class="overflow-hidden">
+                <div class="brand-title">Coffee Mango</div>
+                <div class="d-flex align-items-center gap-1 mt-1">
+                    <span class="status-indicator-dot"></span>
+                    <span class="brand-subtitle text-truncate" sec:authentication="name">admin</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Menu Items (Clean & Spacious) -->
+    <div class="flex-grow-1 px-3 py-2 overflow-y-auto">
+
+        <!-- Section 1: TỔNG QUAN -->
+        <div class="sidebar-section-title">Tổng quan</div>
+        <ul class="nav flex-column mb-1">
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/dashboard}"
+                   th:classappend="${activePage == 'dashboard'} ? ' active-menu'">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Section 2: VẬN HÀNH & BÁN HÀNG -->
+        <div class="sidebar-section-title">Vận hành & Bán hàng</div>
+        <ul class="nav flex-column mb-1">
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/tables}"
+                   th:classappend="${activePage == 'tables'} ? ' active-menu'">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>
+                    <span>Sơ đồ bàn</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/invoices}"
+                   th:classappend="${activePage == 'invoices'} ? ' active-menu'">
+                    <i class="bi bi-receipt-cutoff"></i>
+                    <span>Hóa đơn / POS</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Section 3: THỰC ĐƠN & KHO HÀNG -->
+        <div class="sidebar-section-title">Menu & Kho hàng</div>
+        <ul class="nav flex-column mb-1">
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/products}"
+                   th:classappend="${activePage == 'products'} ? ' active-menu'">
+                    <i class="bi bi-cup-straw"></i>
+                    <span>Sản phẩm / Menu</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/categories}"
+                   th:classappend="${activePage == 'categories'} ? ' active-menu'">
+                    <i class="bi bi-tags-fill"></i>
+                    <span>Danh mục</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/ingredients}"
+                   th:classappend="${activePage == 'ingredients'} ? ' active-menu'">
+                    <i class="bi bi-box2-heart-fill"></i>
+                    <span>Kho nguyên liệu</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Section 4: AI & BÁO CÁO -->
+        <div class="sidebar-section-title">Trí tuệ AI & Báo cáo</div>
+        <ul class="nav flex-column mb-1">
+            <li class="nav-item">
+                <a class="nav-link d-flex justify-content-between align-items-center" th:href="@{/ai}"
+                   th:classappend="${activePage == 'ai'} ? ' active-menu'">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-stars" style="color: #F59E0B;"></i>
+                        <span>Trợ lý AI Gemini</span>
+                    </div>
+                    <span class="badge" style="background: linear-gradient(135deg, #FF6B00, #F59E0B); color: #FFF; font-size: 0.65rem; padding: 3px 8px; font-weight: 700;">PRO</span>
+                </a>
+            </li>
+            <li class="nav-item" sec:authorize="hasAnyRole('ADMIN', 'MANAGER')">
+                <a class="nav-link" th:href="@{/revenue}"
+                   th:classappend="${activePage == 'revenue'} ? ' active-menu'">
+                    <i class="bi bi-bar-chart-line-fill"></i>
+                    <span>Thống kê doanh thu</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Section 5: HỆ THỐNG (ADMIN) -->
+        <div sec:authorize="hasRole('ADMIN')">
+            <div class="sidebar-section-title">Hệ thống</div>
+            <ul class="nav flex-column mb-1">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/staff}"
+                       th:classappend="${activePage == 'staff'} ? ' active-menu'">
+                        <i class="bi bi-person-badge-fill"></i>
+                        <span>Quản lý nhân viên</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+    </div>
+
+    <!-- User Profile & Logout Footer -->
+    <div class="p-3 border-top mt-auto" style="border-color: #E2E8F0 !important;">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn-logout">
+                <i class="bi bi-box-arrow-left"></i>
+                <span>Đăng xuất</span>
+            </button>
+        </form>
+    </div>
+
+</nav>
+</body>
+</html>

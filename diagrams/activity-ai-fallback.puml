@@ -1,0 +1,66 @@
+@startuml Activity_AI_ContextInjection_Fallback_CoffeeMango
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+
+skinparam activity {
+    BackgroundColor #FFF2CC
+    BorderColor #B25900
+    BorderThickness 1.5
+    ArrowColor #A61C1C
+    FontSize 12
+    FontColor #000000
+}
+
+skinparam activityDiamond {
+    BackgroundColor #FFE599
+    BorderColor #B25900
+    BorderThickness 1.5
+    ArrowColor #A61C1C
+    FontSize 11
+    FontColor #000000
+}
+
+skinparam swimlane {
+    BorderColor #333333
+    BorderThickness 1.5
+    TitleBackgroundColor #F9CB9C
+    TitleFontColor #000000
+    TitleFontStyle bold
+    FontSize 13
+}
+
+|Người dùng (User)|
+start
+:Mở giao diện Trợ lý AI Copilot;
+
+repeat :Nhập câu hỏi phân tích kinh doanh / kho;
+:Nhấn nút "Gửi yêu cầu";
+
+|Hệ thống Coffee Mango & Gemini AI|
+:Kiểm tra nội dung câu hỏi;
+backward:Thông báo: "Nội dung câu hỏi không được để trống";
+repeat while (Nội dung hợp lệ?) is (Không) not (Có)
+
+:Phân tích Intent câu hỏi (Kho / Doanh thu / Nghiệp vụ);
+:Truy vấn số liệu thời gian thực từ Database;
+:Bơm ngữ cảnh (Context Injection) vào System Prompt;
+:Gửi yêu cầu phân tích tới Google Gemini API;
+
+if (Kết nối Gemini API thành công?) then (Có)
+    :Bóc tách JSON phản hồi thông minh từ Gemini;
+    :Format định dạng Markdown và bảng số liệu;
+else (Không: Lỗi mạng / Quá Quota)
+    :Kích hoạt cơ chế Fallback dự phòng nội bộ;
+    :Chạy thuật toán rule-based xử lý số liệu thô;
+    :Đính kèm thông báo: "Đang hiển thị ở chế độ Offline";
+endif
+
+:Hiển thị kết quả phân tích lên giao diện Chat;
+
+|Người dùng (User)|
+:Xem câu trả lời và tham khảo quyết định kinh doanh;
+stop
+
+@enduml

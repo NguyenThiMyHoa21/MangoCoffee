@@ -1,0 +1,100 @@
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Sản phẩm | Coffee Mango</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div class="d-flex">
+    <div th:replace="~{layout/sidebar :: sidebar(activePage='products')}"></div>
+    <main class="flex-grow-1 main-content">
+        <div th:replace="~{layout/topnav :: topnav}"></div>
+        <div class="p-4">
+            <!-- Flash -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+                <i class="bi bi-check-circle me-2"></i><span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold mb-0"><i class="bi bi-box-seam me-2 text-info"></i>Quản lý sản phẩm</h4>
+                <a th:href="@{/products/create}" class="btn btn-coffee"
+                   sec:authorize="hasAnyRole('ADMIN', 'MANAGER')">
+                    <i class="bi bi-plus-lg me-1"></i>Thêm sản phẩm
+                </a>
+            </div>
+
+            <!-- Search -->
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body py-2">
+                    <form th:action="@{/products}" method="get" class="d-flex gap-2">
+                        <input type="text" name="keyword" class="form-control" placeholder="Tìm kiếm sản phẩm..."
+                               th:value="${keyword}"/>
+                        <button type="submit" class="btn btn-outline-secondary">
+                            <i class="bi bi-search"></i>
+                        </button>
+                        <a th:href="@{/products}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Tên sản phẩm</th>
+                                <th>Danh mục</th>
+                                <th class="text-end">Giá</th>
+                                <th class="text-center">Trạng thái</th>
+                                <th class="text-center" sec:authorize="hasAnyRole('ADMIN', 'MANAGER')">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(products)}">
+                                <td colspan="6" class="text-center text-muted py-4">Không có sản phẩm nào</td>
+                            </tr>
+                            <tr th:each="p, stat : ${products}">
+                                <td th:text="${stat.index + 1}"></td>
+                                <td>
+                                    <span class="fw-semibold" th:text="${p.name}"></span>
+                                    <div class="text-muted small" th:text="${p.description}"></div>
+                                </td>
+                                <td><span class="badge bg-secondary" th:text="${p.category.name}"></span></td>
+                                <td class="text-end fw-semibold text-success"
+                                    th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+                                <td class="text-center">
+                                    <span th:if="${p.available}" class="badge bg-success">Đang bán</span>
+                                    <span th:unless="${p.available}" class="badge bg-danger">Ẩn</span>
+                                </td>
+                                <td class="text-center" sec:authorize="hasAnyRole('ADMIN', 'MANAGER')">
+                                    <a th:href="@{/products/edit/{id}(id=${p.id})}"
+                                       class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form th:action="@{/products/delete/{id}(id=${p.id})}"
+                                          method="post" class="d-inline"
+                                          onsubmit="return confirm('Ẩn sản phẩm này?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-eye-slash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

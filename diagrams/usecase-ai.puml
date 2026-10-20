@@ -1,0 +1,79 @@
+@startuml
+left to right direction
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+
+skinparam actor {
+    BackgroundColor #FFF7ED
+    BorderColor #9A3412
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #FFFFFF
+    BorderColor #8C532B
+    BorderThickness 1.2
+    ArrowColor #8C532B
+    FontSize 12
+}
+
+skinparam rectangle {
+    BorderColor #555555
+    BorderThickness 1.2
+    BackgroundColor #FFFFFF
+}
+
+actor "Quản trị viên\n(Admin)" as Admin
+actor "Quản lý\n(Manager)" as Manager
+actor "Nhân viên\n(Staff)" as Staff
+
+actor "Google Gemini API" as Gemini <<External System>> #EFF6FF
+
+rectangle "Phân hệ Tích hợp Trí tuệ Nhân tạo (AI) - Coffee Mango" {
+    usecase "UC_AI01: Trợ lý AI Copilot\n(Hỏi đáp đa vai trò)" as UC_AI01
+    usecase "UC_AI02: Phân tích Doanh thu\n(Tư vấn kinh doanh)" as UC_AI02
+    usecase "UC_AI03: Lập kế hoạch Kho\n(Dự trù nhập hàng)" as UC_AI03
+    
+    usecase "Lọc ngữ cảnh theo vai trò" as UC_Context
+    usecase "Gợi ý câu hỏi nhanh (Prompts)" as UC_Prompt
+    
+    usecase "Thu thập số liệu tài chính" as UC_Finance
+    usecase "Xuất báo cáo tư vấn kinh doanh" as UC_Report
+    
+    usecase "Quét nguyên liệu cảnh báo" as UC_Stock
+    usecase "Đối chiếu món bán chạy" as UC_TopDish
+    usecase "Đề xuất số lượng nhập hàng" as UC_OrderQty
+    
+    usecase "Xây dựng Prompt &\nGửi tới Gemini API" as UC_CallAI
+}
+
+Admin --> UC_AI01
+Admin --> UC_AI02
+Admin --> UC_AI03
+
+Manager --> UC_AI01
+Manager --> UC_AI02
+Manager --> UC_AI03
+
+Staff --> UC_AI01
+
+UC_AI01 ..> UC_Context : <<include>>
+UC_AI01 ..> UC_CallAI : <<include>>
+UC_Prompt ..> UC_AI01 : <<extend>>
+
+UC_AI02 ..> UC_Finance : <<include>>
+UC_AI02 ..> UC_CallAI : <<include>>
+UC_Report ..> UC_AI02 : <<extend>>
+
+UC_AI03 ..> UC_Stock : <<include>>
+UC_AI03 ..> UC_TopDish : <<include>>
+UC_AI03 ..> UC_CallAI : <<include>>
+UC_OrderQty ..> UC_AI03 : <<extend>>
+
+UC_CallAI --> Gemini
+@enduml

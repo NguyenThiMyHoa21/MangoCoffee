@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Sơ đồ bàn | Coffee Mango</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+    <style>
+        .floor-tab {
+            padding: 8px 18px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1.5px solid #E2E8F0;
+            background: #FFFFFF;
+            color: #64748B;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .floor-tab:hover {
+            border-color: #FF6B00;
+            color: #FF6B00;
+        }
+        .floor-tab.active {
+            background: linear-gradient(135deg, #FF6B00, #F59E0B);
+            border-color: transparent;
+            color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(255, 107, 0, 0.25);
+        }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+    <div th:replace="~{layout/sidebar :: sidebar(activePage='tables')}"></div>
+    <main class="flex-grow-1 main-content">
+        <div th:replace="~{layout/topnav :: topnav}"></div>
+        <div class="p-4">
+
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h4 class="fw-bold mb-1">
+                        <i class="bi bi-grid-3x3-gap-fill me-2" style="color: #D97706;"></i>Sơ đồ bàn & Gọi món
+                    </h4>
+                    <p class="text-muted small mb-0">Theo dõi trực tiếp bàn trống, khách đang ngồi và tạo đơn nhanh</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/tables/manage}" class="btn btn-outline-coffee btn-sm" sec:authorize="hasRole('ADMIN')">
+                        <i class="bi bi-gear-fill me-1"></i>Quản lý bàn
+                    </a>
+                    <a th:href="@{/invoices/create}" class="btn btn-coffee btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i>Tạo hóa đơn
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Status Summary KPI -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper stat-emerald">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <div>
+                            <div class="stat-label">Bàn trống sẵn sàng</div>
+                            <div class="stat-val text-success" th:text="${statusCount != null ? statusCount.available : 0}">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper stat-rose">
+                            <i class="bi bi-cup-hot-fill"></i>
+                        </div>
+                        <div>
+                            <div class="stat-label">Đang có khách phục vụ</div>
+                            <div class="stat-val text-danger" th:text="${statusCount != null ? statusCount.occupied : 0}">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper stat-amber">
+                            <i class="bi bi-bookmark-star-fill"></i>
+                        </div>
+                        <div>
+                            <div class="stat-label">Bàn đã đặt trước</div>
+                            <div class="stat-val text-warning" th:text="${statusCount != null ? statusCount.reserved : 0}">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floor Filter Tabs & Legend Bar -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="d-flex gap-2 flex-wrap" id="floorFilters">
+                        <button class="floor-tab active" onclick="filterFloor('all', this)">
+                            <i class="bi bi-layers-fill me-1"></i>Tất cả bàn
+                        </button>
+                        <button class="floor-tab" onclick="filterFloor('Trong nhà', this)">
+                            <i class="bi bi-house-door-fill me-1"></i>Trong nhà
+                        </button>
+                        <button class="floor-tab" onclick="filterFloor('Ngoài trời', this)">
+                            <i class="bi bi-tree-fill me-1"></i>Ngoài trời
+                        </button>
+                        <button class="floor-tab" onclick="filterFloor('Tầng 2', this)">
+                            <i class="bi bi-building-fill me-1"></i>Tầng 2
+                        </button>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 small text-muted">
+                        <span><span class="status-indicator-dot me-1"></span>Trống</span>
+                        <span><span class="status-indicator-dot me-1" style="background:#EF4444; box-shadow:0 0 0 2px rgba(239,68,68,0.2);"></span>Có khách</span>
+                        <span><span class="status-indicator-dot me-1" style="background:#F59E0B; box-shadow:0 0 0 2px rgba(245,158,11,0.2);"></span>Đặt trước</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Cards Grid -->
+            <div class="table-grid" id="tablesContainer">
+                <div th:each="t : ${tables}"
+                     class="table-item-wrapper"
+                     th:attr="data-location=${t.location}">
+                    <div class="table-node" th:classappend="${t.status.name()}">
+                        
+                        <!-- Top details: location & capacity -->
+                        <div class="d-flex justify-content-between align-items-center w-100 px-1 mb-2">
+                            <span class="badge bg-light text-secondary border" style="font-size: 0.65rem;" th:text="${t.location}">Khu vực</span>
+                            <span class="table-node-capacity">
+                                <i class="bi bi-people-fill me-1"></i><span th:text="${t.capacity}">4</span>
+                            </span>
+                        </div>
+
+                        <!-- Table Icon & Name (Clickable link to order) -->
+                        <a th:href="@{/tables/{id}/order(id=${t.id})}" class="text-decoration-none text-center my-1 w-100">
+                            <div class="table-node-name" th:text="${t.tableNumber}">Bàn 01</div>
+                            
+                            <div class="table-node-status"
+                                 th:text="${t.status.name() == 'AVAILABLE'} ? '✓ Trống' :
+                                           (${t.status.name() == 'OCCUPIED'} ? '● Có khách' : '★ Đã đặt')">
+                                Trạng thái
+                            </div>
+
+                            <!-- Bill badge if occupied -->
+                            <div th:if="${tableInvoiceMap != null and tableInvoiceMap.containsKey(t.id)}"
+                                 class="badge bg-danger text-white mt-2 shadow-sm d-block text-truncate" style="font-size:0.7rem;">
+                                <i class="bi bi-receipt me-1"></i>
+                                <span th:text="${#numbers.formatDecimal(tableInvoiceMap.get(t.id).finalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                            </div>
+                        </a>
+
+                        <!-- Quick Action Button -->
+                        <div class="w-100 mt-3 pt-2 border-top">
+                            <button th:if="${t.status.name() == 'AVAILABLE'}"
+                                    th:onclick="'quickSetStatus(' + ${t.id} + ', \'RESERVED\')'"
+                                    class="btn btn-sm btn-outline-warning w-100" style="font-size: 0.72rem; padding: 4px 6px;">
+                                <i class="bi bi-bookmark-plus me-1"></i>Đặt chỗ
+                            </button>
+                            <button th:if="${t.status.name() == 'RESERVED'}"
+                                    th:onclick="'quickSetStatus(' + ${t.id} + ', \'AVAILABLE\')'"
+                                    class="btn btn-sm btn-outline-success w-100" style="font-size: 0.72rem; padding: 4px 6px;">
+                                <i class="bi bi-check2-circle me-1"></i>Mở trống
+                            </button>
+                            <button th:if="${t.status.name() == 'OCCUPIED'}"
+                                    th:onclick="'quickSetStatus(' + ${t.id} + ', \'AVAILABLE\')'"
+                                    class="btn btn-sm btn-outline-secondary w-100" style="font-size: 0.72rem; padding: 4px 6px;">
+                                <i class="bi bi-arrow-repeat me-1"></i>Trả bàn
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty state when no tables match -->
+            <div id="noTablesMsg" class="card p-5 text-center text-muted d-none mt-3">
+                <i class="bi bi-inbox fs-1 mb-2 opacity-50"></i>
+                <div>Không tìm thấy bàn nào ở khu vực này</div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+<script>
+    function filterFloor(floor, btn) {
+        document.querySelectorAll('.floor-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const items = document.querySelectorAll('.table-item-wrapper');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const itemLocation = item.getAttribute('data-location');
+            if (floor === 'all' || itemLocation === floor) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        const noMsg = document.getElementById('noTablesMsg');
+        if (visibleCount === 0) {
+            noMsg.classList.remove('d-none');
+        } else {
+            noMsg.classList.add('d-none');
+        }
+    }
+
+    function quickSetStatus(tableId, status) {
+        fetch('/tables/' + tableId + '/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: status })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Không thể đổi trạng thái bàn');
+            }
+        })
+        .catch(err => alert('Lỗi kết nối: ' + err));
+    }
+</script>
+</body>
+</html>

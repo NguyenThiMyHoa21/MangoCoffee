@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Thông báo lỗi | Coffee Mango</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body class="bg-light d-flex align-items-center min-vh-100">
+    <div class="container text-center py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card border-0 shadow-sm p-4 rounded-4">
+                    <div class="mb-3">
+                        <span class="display-1 fw-bold" style="color: #6f4e37;" th:text="${status} ?: '403'">403</span>
+                    </div>
+                    <h4 class="fw-bold mb-2 text-dark" th:if="${status == 403}">Không có quyền truy cập</h4>
+                    <h4 class="fw-bold mb-2 text-dark" th:if="${status == 404}">Trang không tìm thấy</h4>
+                    <h4 class="fw-bold mb-2 text-dark" th:if="${status != 403 and status != 404}">Đã xảy ra sự cố</h4>
+                    
+                    <p class="text-muted mb-4" th:text="${message} ?: 'Tài nguyên không khả dụng hoặc bạn không đủ quyền truy cập tính năng này.'">
+                        Tài nguyên không khả dụng hoặc bạn không đủ quyền truy cập tính năng này.
+                    </p>
+                    
+                    <div class="d-flex justify-content-center gap-2">
+                        <button onclick="history.back()" class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-arrow-left me-1"></i> Quay lại
+                        </button>
+                        <a th:href="@{/dashboard}" class="btn btn-coffee px-4">
+                            <i class="bi bi-house-door me-1"></i> Trang chủ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

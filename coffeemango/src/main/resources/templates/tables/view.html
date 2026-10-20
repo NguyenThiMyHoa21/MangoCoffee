@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sơ đồ bàn - Coffee Mango</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .table-card {
+            border: 2px solid #8B4513;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px;
+            min-height: 120px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: center;
+        }
+        .table-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .table-available {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-color: #28a745;
+        }
+        .table-occupied {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border-color: #dc3545;
+        }
+        .table-reserved {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-color: #ffc107;
+        }
+        .table-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #8B4513;
+        }
+        .table-capacity {
+            font-size: 14px;
+            color: #666;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .badge-available {
+            background-color: #28a745;
+            color: white;
+        }
+        .badge-occupied {
+            background-color: #dc3545;
+            color: white;
+        }
+        .badge-reserved {
+            background-color: #ffc107;
+            color: #333;
+        }
+        .section-title {
+            background-color: #8B4513;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin: 20px 0 15px 0;
+        }
+        .stat-card {
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #8B4513;">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="bi bi-cup-hot-fill"></i> Coffee Mango
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/tables">Sơ đồ bàn</a>
+                    </li>
+                </ul>
+                <span class="navbar-text text-white" sec:authentication="name"></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2">
+                <div class="list-group">
+                    <a href="/dashboard" class="list-group-item list-group-item-action">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="/tables" class="list-group-item list-group-item-action active">
+                        <i class="bi bi-grid-3x3"></i> Sơ đồ bàn
+                    </a>
+                    <a href="/invoices/create" class="list-group-item list-group-item-action">
+                        <i class="bi bi-receipt"></i> Tạo hóa đơn
+                    </a>
+                    <a sec:authorize="hasAnyRole('ADMIN','MANAGER')" href="/products" class="list-group-item list-group-item-action">
+                        <i class="bi bi-box-seam"></i> Sản phẩm
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <div class="col-md-10">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2><i class="bi bi-grid-3x3"></i> Sơ đồ bàn</h2>
+                    <div>
+                        <button sec:authorize="hasAnyRole('ADMIN','MANAGER')" class="btn btn-success" onclick="location.href='/tables/add'">
+                            <i class="bi bi-plus-circle"></i> Thêm bàn mới
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Thống kê trạng thái -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="stat-card table-available">
+                            <h1 th:text="${statusCount.available}">5</h1>
+                            <p>Bàn trống</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card table-occupied">
+                            <h1 th:text="${statusCount.occupied}">3</h1>
+                            <p>Đang có khách</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card table-reserved">
+                            <h1 th:text="${statusCount.reserved}">1</h1>
+                            <p>Đã đặt trước</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sơ đồ bàn theo khu vực -->
+                <div th:each="entry : ${tablesByLocation}">
+                    <h4 class="section-title">
+                        <i class="bi bi-geo-alt-fill"></i> <span th:text="${entry.key}">Khu vực</span>
+                    </h4>
+                    <div class="row">
+                        <div class="col-lg-2 col-md-3 col-sm-4" th:each="table : ${entry.value}">
+                            <div th:class="'table-card table-' + ${table.status.toString().toLowerCase()}" 
+                                 th:onclick="'showTableMenu(' + ${table.id} + ', \'' + ${table.tableNumber} + '\', \'' + ${table.status} + '\')'">
+                                <div class="table-number" th:text="${table.tableNumber}">Bàn 1</div>
+                                <div class="table-capacity">
+                                    <i class="bi bi-people-fill"></i> <span th:text="${table.capacity}">4</span> người
+                                </div>
+                                <div class="status-badge" 
+                                     th:classappend="'badge-' + ${table.status.toString().toLowerCase()}"
+                                     th:text="${table.status == T(com.coffeemango.model.CoffeeTable.TableStatus).AVAILABLE ? 'Trống' : 
+                                               table.status == T(com.coffeemango.model.CoffeeTable.TableStatus).OCCUPIED ? 'Có khách' : 'Đã đặt'}">
+                                    Trống
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal chọn hành động -->
+    <div class="modal fade" id="tableMenuModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Bàn <span id="modalTableNumber"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="selectedTableId">
+                    <input type="hidden" id="selectedTableStatus">
+                    
+                    <button class="btn btn-primary w-100 mb-2" onclick="createInvoiceForTable()">
+                        <i class="bi bi-receipt"></i> Tạo hóa đơn cho bàn này
+                    </button>
+                    
+                    <button class="btn btn-warning w-100 mb-2" onclick="changeStatus('RESERVED')">
+                        <i class="bi bi-bookmark"></i> Đặt bàn trước
+                    </button>
+                    
+                    <button class="btn btn-success w-100 mb-2" onclick="changeStatus('AVAILABLE')">
+                        <i class="bi bi-check-circle"></i> Đánh dấu bàn trống
+                    </button>
+                    
+                    <button class="btn btn-danger w-100 mb-2" onclick="changeStatus('OCCUPIED')">
+                        <i class="bi bi-person-fill"></i> Đánh dấu có khách
+                    </button>
+                    
+                    <hr>
+                    
+                    <button sec:authorize="hasAnyRole('ADMIN','MANAGER')" class="btn btn-outline-primary w-100 mb-2" onclick="editTable()">
+                        <i class="bi bi-pencil"></i> Sửa thông tin bàn
+                    </button>
+                    
+                    <button sec:authorize="hasRole('ADMIN')" class="btn btn-outline-danger w-100" onclick="deleteTable()">
+                        <i class="bi bi-trash"></i> Xóa bàn
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let tableMenuModal = new bootstrap.Modal(document.getElementById('tableMenuModal'));
+
+        function showTableMenu(tableId, tableNumber, status) {
+            document.getElementById('selectedTableId').value = tableId;
+            document.getElementById('selectedTableStatus').value = status;
+            document.getElementById('modalTableNumber').textContent = tableNumber;
+            tableMenuModal.show();
+        }
+
+        function createInvoiceForTable() {
+            const tableId = document.getElementById('selectedTableId').value;
+            window.location.href = '/invoices/create?tableId=' + tableId;
+        }
+
+        function changeStatus(newStatus) {
+            const tableId = document.getElementById('selectedTableId').value;
+            
+            fetch('/tables/api/update-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'tableId=' + tableId + '&status=' + newStatus
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra!');
+            });
+        }
+
+        function editTable() {
+            const tableId = document.getElementById('selectedTableId').value;
+            window.location.href = '/tables/edit/' + tableId;
+        }
+
+        function deleteTable() {
+            if (confirm('Bạn có chắc muốn xóa bàn này?')) {
+                const tableId = document.getElementById('selectedTableId').value;
+                window.location.href = '/tables/delete/' + tableId;
+            }
+        }
+    </script>
+</body>
+</html>

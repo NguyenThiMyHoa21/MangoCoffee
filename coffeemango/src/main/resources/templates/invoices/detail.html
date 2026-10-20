@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Chi tiết hóa đơn | Coffee Mango</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div class="d-flex">
+    <div th:replace="~{layout/sidebar :: sidebar(activePage='invoices')}"></div>
+    <main class="flex-grow-1 main-content">
+        <div th:replace="~{layout/topnav :: topnav}"></div>
+        <div class="p-4">
+            <div class="d-flex align-items-center mb-4 gap-2">
+                <a th:href="@{/invoices}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h4 class="fw-bold mb-0">
+                    Chi tiết hóa đơn: <span class="text-primary" th:text="${invoice.invoiceCode}"></span>
+                </h4>
+                <a th:href="@{/invoices/print/{id}(id=${invoice.id})}"
+                   target="_blank" class="btn btn-sm btn-outline-secondary ms-2">
+                    <i class="bi bi-printer me-1"></i>In hóa đơn
+                </a>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="fw-bold mb-3">Thông tin hóa đơn</h6>
+                            <div class="mb-2">
+                                <span class="text-muted small">Nhân viên:</span>
+                                <div class="fw-semibold" th:text="${invoice.staff != null ? invoice.staff.fullName : 'N/A'}"></div>
+                            </div>
+                            <div class="mb-2">
+                                <span class="text-muted small">Phương thức:</span>
+                                <div class="fw-semibold" th:text="${invoice.paymentMethod}"></div>
+                            </div>
+                            <div class="mb-2">
+                                <span class="text-muted small">Trạng thái:</span>
+                                <div>
+                                    <span class="badge"
+                                          th:classappend="${invoice.status.name() == 'COMPLETED'} ? 'bg-success' : (${invoice.status.name() == 'CANCELLED'} ? 'bg-danger' : 'bg-warning text-dark')"
+                                          th:text="${invoice.status}"></span>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <span class="text-muted small">Thời gian:</span>
+                                <div th:text="${#temporals.format(invoice.createdAt, 'dd/MM/yyyy HH:mm')}"></div>
+                            </div>
+                            <hr/>
+                            <div class="d-flex justify-content-between">
+                                <span>Tổng cộng:</span>
+                                <span class="fw-bold" th:text="${#numbers.formatDecimal(invoice.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted">
+                                <span>Giảm giá:</span>
+                                <span th:text="${#numbers.formatDecimal(invoice.discount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                            </div>
+                            <div class="d-flex justify-content-between fw-bold text-success fs-5 mt-2">
+                                <span>Thành tiền:</span>
+                                <span th:text="${#numbers.formatDecimal(invoice.finalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white fw-semibold">Chi tiết sản phẩm</div>
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Sản phẩm</th>
+                                        <th class="text-center">SL</th>
+                                        <th class="text-end">Đơn giá</th>
+                                        <th class="text-end">Thành tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="d, stat : ${invoice.details}">
+                                        <td th:text="${stat.index + 1}"></td>
+                                        <td th:text="${d.product.name}"></td>
+                                        <td class="text-center" th:text="${d.quantity}"></td>
+                                        <td class="text-end" th:text="${#numbers.formatDecimal(d.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+                                        <td class="text-end fw-semibold" th:text="${#numbers.formatDecimal(d.subtotal, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

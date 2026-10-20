@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Nguyên liệu | Coffee Mango</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+    <style>
+        .ai-inv-box {
+            background: #FFFFFF;
+            border-radius: 14px;
+            padding: 18px 22px;
+            border: 1.5px solid #A7F3D0;
+            font-size: 0.9rem;
+            line-height: 1.55;
+            color: #1E293B;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.08);
+        }
+        .ai-inv-box p {
+            margin-bottom: 0.5rem;
+        }
+        .ai-inv-box ul, .ai-inv-box ol {
+            margin-top: 0.25rem;
+            margin-bottom: 0.75rem;
+            padding-left: 1.25rem;
+        }
+        .ai-inv-box li {
+            margin-bottom: 0.35rem;
+        }
+        .ai-inv-box h1, .ai-inv-box h2, .ai-inv-box h3, .ai-inv-box h4, .ai-inv-box h5 {
+            margin-top: 1rem;
+            margin-bottom: 0.4rem;
+            font-weight: 700;
+            color: #065F46;
+            font-size: 0.98rem;
+        }
+        .ai-inv-box strong {
+            color: #0F172A;
+        }
+    </style>
+</head>
+<body>
+<div class="d-flex w-100">
+    <div th:replace="~{layout/sidebar :: sidebar(activePage='ingredients')}"></div>
+    <main class="flex-grow-1 main-content" style="min-width: 0;">
+        <div th:replace="~{layout/topnav :: topnav}"></div>
+        <div class="p-4">
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+                <i class="bi bi-check-circle me-2"></i><span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Cảnh báo nguyên liệu sắp hết -->
+            <div th:if="${!#lists.isEmpty(lowStockIngredients)}" class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Cảnh báo:</strong> Có <span th:text="${lowStockIngredients.size()}">0</span> nguyên liệu sắp hết hàng!
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h4 class="fw-bold mb-0"><i class="bi bi-box2-heart me-2 text-warning"></i>Quản lý nguyên liệu</h4>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn text-white d-flex align-items-center gap-2 shadow-sm"
+                            id="btnAiInventory" onclick="requestAiInventory()"
+                            style="background: linear-gradient(135deg, #059669 0%, #10B981 100%); border: none; border-radius: 12px; padding: 9px 18px; font-weight: 600;">
+                        <i class="bi bi-robot fs-5"></i>
+                        <span>AI Đánh giá Kho & Dự trù Nhập hàng</span>
+                    </button>
+                    <a th:href="@{/ingredients/create}" class="btn btn-coffee"
+                       sec:authorize="hasAnyRole('ADMIN', 'MANAGER')">
+                        <i class="bi bi-plus-lg me-1"></i>Thêm nguyên liệu
+                    </a>
+                </div>
+            </div>
+
+            <!-- AI Inventory Plan Card -->
+            <div class="card border-0 mb-4 shadow-sm" id="aiInventoryCard"
+                 style="display:none; border-radius: 18px; background: #FFFFFF; border: 1.5px solid #10B981 !important; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.08) !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                 style="width:44px; height:44px; background: #ECFDF5; color: #059669; font-size: 1.25rem;">
+                                <i class="bi bi-robot"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0" style="color: #065F46;">Kế hoạch Dự trù Nhập hàng từ Gemini AI</h6>
+                                <small class="text-muted">Phân tích tồn kho kết hợp với danh sách đồ uống bán chạy nhất</small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" onclick="document.getElementById('aiInventoryCard').style.display='none'"></button>
+                    </div>
+
+                    <!-- Loading Spinner -->
+                    <div id="aiInvLoading" class="text-center py-4" style="display:none;">
+                        <div class="spinner-border text-success" role="status"></div>
+                        <p class="text-muted mt-2 small">Trợ lý AI đang kiểm tra tồn kho và lập dự trù nhập hàng...</p>
+                    </div>
+
+                    <!-- Kết quả phân tích -->
+                    <div id="aiInvContent" class="ai-inv-box" style="display:none;"></div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Nguyên liệu</th>
+                                <th class="text-center">Tồn kho</th>
+                                <th class="text-center">Đơn vị</th>
+                                <th class="text-center">Mức tối thiểu</th>
+                                <th class="text-end">Giá nhập</th>
+                                <th class="text-center">Trạng thái</th>
+                                <th class="text-center" sec:authorize="hasAnyRole('ADMIN', 'MANAGER')">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(ingredients)}">
+                                <td colspan="8" class="text-center text-muted py-4">Chưa có nguyên liệu nào</td>
+                            </tr>
+                            <tr th:each="i, stat : ${ingredients}">
+                                <td th:text="${stat.index + 1}"></td>
+                                <td class="fw-semibold" th:text="${i.name}"></td>
+                                <td class="text-center fw-bold"
+                                    th:classappend="${i.minQuantity != null and i.quantity != null and i.quantity.compareTo(i.minQuantity) <= 0} ? 'text-danger' : 'text-dark'"
+                                    th:text="${i.formattedQuantity}"></td>
+                                <td class="text-center" th:text="${i.unit}"></td>
+                                <td class="text-center text-muted" th:text="${i.formattedMinQuantity}"></td>
+                                <td class="text-end"
+                                    th:text="${i.costPerUnit != null ? #numbers.formatDecimal(i.costPerUnit, 0, 'COMMA', 0, 'POINT') + ' đ' : '—'}"></td>
+                                <td class="text-center">
+                                    <span th:if="${i.minQuantity != null and i.quantity != null and i.quantity.compareTo(i.minQuantity) <= 0}"
+                                          class="badge bg-danger">Sắp hết</span>
+                                    <span th:unless="${i.minQuantity != null and i.quantity != null and i.quantity.compareTo(i.minQuantity) <= 0}"
+                                          class="badge bg-success-subtle text-success border border-success-subtle">Đủ hàng</span>
+                                </td>
+                                <td class="text-center" sec:authorize="hasAnyRole('ADMIN', 'MANAGER')">
+                                    <a th:href="@{/ingredients/edit/{id}(id=${i.id})}"
+                                       class="btn btn-sm btn-outline-primary me-1" title="Chỉnh sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form th:action="@{/ingredients/delete/{id}(id=${i.id})}"
+                                          method="post" class="d-inline"
+                                          onsubmit="return confirm('Bạn có chắc chắn muốn xóa nguyên liệu này?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+<script>
+    function requestAiInventory() {
+        const card = document.getElementById('aiInventoryCard');
+        const loading = document.getElementById('aiInvLoading');
+        const content = document.getElementById('aiInvContent');
+        const btn = document.getElementById('btnAiInventory');
+
+        card.style.display = 'block';
+        loading.style.display = 'block';
+        content.style.display = 'none';
+        content.innerHTML = '';
+        btn.disabled = true;
+
+        fetch('/ingredients/analyze', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                loading.style.display = 'none';
+                btn.disabled = false;
+                content.style.display = 'block';
+                if (data && data.analysis) {
+                    try {
+                        content.innerHTML = (typeof marked !== 'undefined') ? marked.parse(data.analysis) : data.analysis;
+                    } catch (e) {
+                        content.innerText = data.analysis;
+                    }
+                } else {
+                    content.innerText = '⚠️ Không có dữ liệu phân tích. Vui lòng thử lại.';
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                btn.disabled = false;
+                content.style.display = 'block';
+                content.innerText = '❌ Lỗi kết nối đến dịch vụ AI (' + err + '). Vui lòng thử lại sau.';
+            });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="'Hóa đơn ' + ${invoice.invoiceCode} + ' | Coffee Mango'">In hóa đơn</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Courier New', monospace; font-size: 13px; color: #000; background: #fff; }
+        .bill { width: 300px; margin: 0 auto; padding: 20px 15px; }
+        .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 12px; margin-bottom: 12px; }
+        .header h2 { font-size: 20px; font-weight: bold; letter-spacing: 2px; }
+        .header p { font-size: 11px; margin-top: 4px; }
+        .info { margin-bottom: 12px; border-bottom: 1px dashed #000; padding-bottom: 12px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+        .items { margin-bottom: 12px; }
+        .item { margin-bottom: 8px; }
+        .item-name { font-weight: bold; }
+        .item-detail { display: flex; justify-content: space-between; font-size: 12px; color: #333; }
+        .divider { border-top: 1px dashed #000; margin: 10px 0; }
+        .total-section { margin-bottom: 12px; }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; }
+        .total-final { font-size: 16px; font-weight: bold; border-top: 2px solid #000; padding-top: 8px; margin-top: 8px; }
+        .footer { text-align: center; border-top: 2px dashed #000; padding-top: 12px; margin-top: 12px; }
+        .footer p { font-size: 11px; margin-bottom: 3px; }
+        .footer .thanks { font-size: 14px; font-weight: bold; margin-bottom: 6px; }
+        .btn-action {
+            display: block; width: 100%; padding: 11px;
+            border: none; border-radius: 10px; font-size: 13.5px; cursor: pointer;
+            font-weight: bold; text-align: center; text-decoration: none;
+            transition: all 0.2s;
+        }
+        .btn-orange { background: #FF6B00; color: white; }
+        .btn-orange:hover { background: #E05E00; }
+        .btn-green { background: #10B981; color: white; }
+        .btn-green:hover { background: #059669; }
+        .btn-gray { background: #475569; color: white; }
+        .btn-gray:hover { background: #334155; }
+        @media print {
+            .btn-action, .no-print { display: none !important; }
+            body { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+<div class="bill">
+    <!-- Header -->
+    <div class="header">
+        <h2>☕ COFFEE MANGO</h2>
+        <p>182 Huỳnh Văn Nghệ, TP. Đà Nẵng</p>
+        <p>Tel: 0901 234 567</p>
+    </div>
+
+    <!-- Thông tin hóa đơn -->
+    <div class="info">
+        <div class="info-row">
+            <span>Mã HĐ:</span>
+            <span th:text="${invoice.invoiceCode}"></span>
+        </div>
+        <div class="info-row" th:if="${invoice.coffeeTable != null}">
+            <span>Bàn:</span>
+            <span th:text="${invoice.coffeeTable.tableNumber}"></span>
+        </div>
+        <div class="info-row">
+            <span>Thời gian:</span>
+            <span th:text="${#temporals.format(invoice.createdAt, 'dd/MM/yyyy HH:mm')}"></span>
+        </div>
+        <div class="info-row">
+            <span>Thu ngân:</span>
+            <span th:text="${invoice.staff != null ? invoice.staff.fullName : 'N/A'}"></span>
+        </div>
+        <div class="info-row">
+            <span>Thanh toán:</span>
+            <span th:text="${invoice.paymentMethod == 'CASH' ? '💵 Tiền mặt' :
+                             (invoice.paymentMethod == 'CARD' ? '💳 Thẻ' : '📱 Chuyển khoản')}"></span>
+        </div>
+    </div>
+
+    <!-- Danh sách sản phẩm -->
+    <div class="items">
+        <div th:each="d : ${invoice.details}" class="item">
+            <div class="item-name" th:text="${d.product.name}"></div>
+            <div class="item-detail">
+                <span th:text="${d.quantity} + ' x ' + ${#numbers.formatDecimal(d.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                <span th:text="${#numbers.formatDecimal(d.subtotal, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Tổng tiền -->
+    <div class="total-section">
+        <div class="total-row">
+            <span>Tạm tính:</span>
+            <span th:text="${#numbers.formatDecimal(invoice.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+        </div>
+        <div class="total-row" th:if="${invoice.discount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+            <span>Giảm giá:</span>
+            <span th:text="'-' + ${#numbers.formatDecimal(invoice.discount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+        </div>
+        <div class="total-row total-final">
+            <span>TỔNG CỘNG:</span>
+            <span th:text="${#numbers.formatDecimal(invoice.finalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p class="thanks">Cảm ơn quý khách! 🙏</p>
+        <p>Hẹn gặp lại lần sau</p>
+        <p>Wifi: CoffeeMango | Pass: coffee123</p>
+
+        <!-- QR Code -->
+        <div style="margin-top: 12px; display:flex; flex-direction:column; align-items:center;">
+            <div id="qrCanvas"></div>
+            <p style="font-size: 10px; margin-top: 4px; color: #555;">Quét để xem thông tin hóa đơn</p>
+        </div>
+    </div>
+
+    <!-- Các nút chức năng -->
+    <div class="no-print" style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+        <button type="button" class="btn-action btn-orange" onclick="window.print()">
+            🖨️ In hóa đơn
+        </button>
+        <a th:href="@{/invoices/create}" class="btn-action btn-green">
+            ➕ Tạo hóa đơn mới
+        </a>
+        <button type="button" class="btn-action btn-gray" onclick="closeOrBack()">
+            ✕ Đóng
+        </button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script th:inline="javascript">
+    function closeOrBack() {
+        // 1. Thử đóng cửa sổ nếu mở bằng popup / tab mới
+        try {
+            window.close();
+        } catch (e) {}
+
+        // 2. Dự phòng: Nếu trình duyệt chặn window.close() (do mở cùng tab), tự động chuyển về trang trước hoặc danh sách hóa đơn
+        setTimeout(function () {
+            if (document.referrer && document.referrer.includes(window.location.host) && !document.referrer.includes('/print/')) {
+                window.location.href = document.referrer;
+            } else {
+                window.location.href = '/invoices';
+            }
+        }, 120);
+    }
+
+    window.onload = function() {
+        const invoiceCode = [[${invoice.invoiceCode}]];
+        const finalAmount = [[${invoice.finalAmount}]];
+        const createdAt = [[${#temporals.format(invoice.createdAt, 'dd/MM/yyyy HH:mm')}]];
+
+        const qrContent = 'Coffee Mango | ' + invoiceCode
+            + ' | ' + finalAmount + ' VND'
+            + ' | ' + createdAt;
+
+        new QRCode(document.getElementById('qrCanvas'), {
+            text: qrContent,
+            width: 120,
+            height: 120,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    };
+</script>
+</body>
+</html>

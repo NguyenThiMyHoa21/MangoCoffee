@@ -1,0 +1,97 @@
+@startuml Sequence_AI_PhanTichKho_CoffeeMango
+autonumber
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+
+skinparam sequence {
+    ArrowColor #8C532B
+    ActorBorderColor #8C532B
+    ActorBackgroundColor #FFF7ED
+    ActorFontSize 12
+    ActorFontStyle bold
+    
+    LifeLineBorderColor #8C532B
+    LifeLineBackgroundColor #FFFDF8
+    
+    ParticipantBorderColor #8C532B
+    ParticipantBackgroundColor #FFF7ED
+    ParticipantFontSize 12
+    ParticipantFontStyle bold
+    
+    GroupBorderColor #8C532B
+    GroupBackgroundColor #FAFAFA
+    GroupHeaderFontSize 12
+    GroupFontSize 11
+}
+
+actor "Quản lý / Quản trị viên\n(Manager / Admin)" as Manager
+boundary "Giao diện Quản lý Kho\n(:InventoryView)" as View
+control "InventoryAIController\n(:Controller)" as Controller
+control "AIInventoryService\n(:Service)" as Service
+entity "IngredientRepository\n(:Repository)" as IngRepo
+entity "OrderRepository\n(:Repository)" as OrderRepo
+database "Cơ sở dữ liệu\n(MySQL)" as DB
+entity "Google Gemini API\n(Gemini 2.5 Flash)" as Gemini <<External API>> #EFF6FF
+
+' --- GIAI ĐOẠN 1: KÍCH HOẠT PHÂN TÍCH KHO ---
+Manager -> View : 1. Truy cập trang Quản lý Kho nguyên liệu
+activate View
+Manager -> View : 2. Nhấn nút "AI Đánh giá kho & Lập kế hoạch nhập hàng"
+View -> Controller : 3. Gửi POST /api/ai/inventory-analysis
+activate Controller
+
+Controller -> Service : 4. analyzeInventoryAndSuggestRestock()
+activate Service
+
+' --- GIAI ĐOẠN 2: THU THẬP NGUYÊN LIỆU BÁO ĐỘNG & MÓN BÁN CHẠY ---
+Service -> IngRepo : 5. findCriticalStockIngredients()
+activate IngRepo
+IngRepo -> DB : 6. SELECT * FROM ingredients WHERE quantity <= min_quantity
+activate DB
+DB --> IngRepo : 7. Danh sách nguyên liệu báo động đỏ / vàng
+deactivate DB
+IngRepo --> Service : 8. Trả về tập nguyên liệu thiếu hụt
+deactivate IngRepo
+
+Service -> OrderRepo : 9. getTopSellingProductsLast7Days()
+activate OrderRepo
+OrderRepo -> DB : 10. SELECT product_id, SUM(quantity) FROM order_details...
+activate DB
+DB --> OrderRepo : 11. Tập dữ liệu tiêu thụ và món bán chạy tuần qua
+deactivate DB
+OrderRepo --> Service : 12. Trả về danh sách Top món bán chạy
+deactivate OrderRepo
+
+' --- GIAI ĐOẠN 3: XÂY DỰNG PROMPT CHUYÊN SÂU ---
+Service -> Service : 13. Tổng hợp số liệu tồn kho, định mức min, đơn giá\nvà công thức pha chế thành Prompt chuyên sâu
+
+' --- GIAI ĐOẠN 4: GỌI GOOGLE GEMINI API ---
+Service -> Gemini : 14. POST /v1beta/models/gemini-2.5-flash:generateContent (Prompt + Data Context)
+activate Gemini
+
+' --- GIAI ĐOẠN 5: XỬ LÝ PHẢN HỒI VÀ ĐỀ XUẤT ---
+alt #FFF5F5 [Trường hợp lỗi: Mất mạng / Quá hạn mức Quota API]
+    Gemini --> Service : 15. HTTP Error (429 / 503 / Timeout)
+    Service -> Service : 16. Kích hoạt thuật toán Fallback nội bộ:\nTự động tính bù lượng thiếu lên 1.5 lần mức min
+    Service --> Controller : 17. Trả về kết quả dự trù sơ bộ (kèm cảnh báo offline)
+    Controller --> View : 18. Phản hồi HTTP 200 OK (Chế độ dự phòng)
+    View --> Manager : 19. Hiển thị bảng dự trù cơ bản từ thuật toán nội bộ
+
+else #F0FDF4 [Trường hợp thành công: AI sinh kế hoạch tối ưu]
+    Gemini --> Service : 20. HTTP 200 OK (JSON phản hồi chứa đề xuất số lượng & thứ tự ưu tiên)
+    deactivate Gemini
+
+    Service -> Service : 21. Bóc tách dữ liệu, tính tổng ngân sách dự kiến cần nhập hàng
+    Service --> Controller : 22. Trả về AIInventoryPlanDTO (Danh sách nhập kho & chi phí dự tính)
+    deactivate Service
+
+    Controller --> View : 23. Phản hồi HTTP 200 OK (Kế hoạch nhập kho thông minh)
+    deactivate Controller
+
+    View -> View : 24. Render Bảng đề xuất nhập hàng (Số lượng, Đơn vị, Chi phí, Huy hiệu Khẩn cấp)
+    View --> Manager : 25. Hiển thị Báo cáo đánh giá kho & Kế hoạch nhập hàng tối ưu
+    deactivate View
+end
+@enduml

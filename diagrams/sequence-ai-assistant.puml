@@ -1,0 +1,90 @@
+@startuml Sequence_TroLyAI_CoffeeMango
+autonumber
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+
+skinparam sequence {
+    ArrowColor #8C532B
+    ActorBorderColor #8C532B
+    ActorBackgroundColor #FFF7ED
+    ActorFontSize 12
+    ActorFontStyle bold
+    
+    LifeLineBorderColor #8C532B
+    LifeLineBackgroundColor #FFFDF8
+    
+    ParticipantBorderColor #8C532B
+    ParticipantBackgroundColor #FFF7ED
+    ParticipantFontSize 12
+    ParticipantFontStyle bold
+    
+    GroupBorderColor #8C532B
+    GroupBackgroundColor #FAFAFA
+    GroupHeaderFontSize 12
+    GroupFontSize 11
+}
+
+actor "Người dùng\n(Admin/Manager/Staff)" as User
+boundary "Giao diện Chat AI\n(:AIChatView)" as View
+control "AIChatController\n(:Controller)" as Controller
+control "GeminiAIService\n(:Service)" as Service
+control "PromptBuilder\n(:Component)" as PromptBuilder
+entity "DataRepositories\n(:Repositories)" as Repo
+database "Cơ sở dữ liệu\n(MySQL)" as DB
+entity "Google Gemini API\n(Gemini 2.5 Flash)" as Gemini <<External API>> #EFF6FF
+
+' --- GIAI ĐOẠN 1: GỬI CÂU HỎI ---
+User -> View : 1. Nhập câu hỏi (VD: "Dự trù nguyên liệu cần nhập tuần này?")
+activate View
+User -> View : 2. Nhấn nút "Gửi câu hỏi"
+View -> Controller : 3. Gửi POST /api/ai/chat (question, userRole)
+activate Controller
+
+Controller -> Service : 4. generateAIResponse(question, userRole)
+activate Service
+
+' --- GIAI ĐOẠN 2: THU THẬP DỮ LIỆU THỰC TẾ (RAG / CONTEXT ENRICHMENT) ---
+Service -> Repo : 5. Truy vấn dữ liệu thực tế (Kho tồn, Doanh thu, Món bán chạy)
+activate Repo
+Repo -> DB : 6. SELECT * FROM ingredients; SELECT * FROM order_details;
+activate DB
+DB --> Repo : 7. Trả về dữ liệu thô từ cơ sở dữ liệu
+deactivate DB
+Repo --> Service : 8. Danh sách nguyên liệu báo động & số liệu bán hàng
+deactivate Repo
+
+' --- GIAI ĐOẠN 3: XÂY DỰNG PROMPT CHUẨN NGỮ CẢNH ---
+Service -> PromptBuilder : 9. buildPromptWithContext(question, businessData, userRole)
+activate PromptBuilder
+PromptBuilder --> Service : 10. System Instructions + Context Data + User Question
+deactivate PromptBuilder
+
+' --- GIAI ĐOẠN 4: GỌI GOOGLE GEMINI API ---
+Service -> Gemini : 11. POST /v1beta/models/gemini-2.5-flash:generateContent (API Key, Payload)
+activate Gemini
+
+' --- GIAI ĐOẠN 5: XỬ LÝ KẾT QUẢ PHẢN HỒI ---
+alt #FFF5F5 [Trường hợp lỗi: Hết Quota / Mất kết nối API / Timeout]
+    Gemini --> Service : 12. HTTP Error 429 (Too Many Requests) hoặc Connection Timeout
+    Service --> Controller : 13. Ném ngoại lệ AIServiceException("AI đang bận, thử lại sau")
+    Controller --> View : 14. Phản hồi HTTP 500 kèm thông báo lỗi thân thiện
+    View --> User : 15. Hiển thị thông báo: "Trợ lý AI tạm thời gián đoạn, vui lòng thử lại sau!"
+
+else #F0FDF4 [Trường hợp thành công: Nhận câu trả lời từ Gemini]
+    Gemini --> Service : 16. HTTP 200 OK (JSON phản hồi chứa text phân tích từ Gemini)
+    deactivate Gemini
+    
+    Service -> Service : 17. Trích xuất text, format Markdown và bảng số liệu đề xuất
+    Service --> Controller : 18. Trả về AIChatResponseDTO (kết quả phân tích & lời khuyên)
+    deactivate Service
+    
+    Controller --> View : 19. Phản hồi HTTP 200 OK (Dữ liệu trả lời của AI)
+    deactivate Controller
+    
+    View -> View : 20. Render định dạng Markdown, biểu tượng và bảng số liệu
+    View --> User : 21. Hiển thị câu trả lời và đề xuất chiến lược trên khung chat
+    deactivate View
+end
+@enduml

@@ -1,0 +1,64 @@
+@startuml Activity_DangNhap_PhanQuyen
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+
+skinparam activity {
+    BackgroundColor #FFF2CC
+    BorderColor #B25900
+    BorderThickness 1.5
+    ArrowColor #A61C1C
+    FontSize 12
+    FontColor #000000
+}
+
+skinparam activityDiamond {
+    BackgroundColor #FFE599
+    BorderColor #B25900
+    BorderThickness 1.5
+    ArrowColor #A61C1C
+    FontSize 11
+    FontColor #000000
+}
+
+skinparam swimlane {
+    BorderColor #333333
+    BorderThickness 1.5
+    TitleBackgroundColor #F9CB9C
+    TitleFontColor #000000
+    TitleFontStyle bold
+    FontSize 13
+}
+
+|Người dùng (User)|
+start
+:Mở hệ thống Coffee Mango;
+
+|Hệ thống Coffee Mango|
+:Hiển thị giao diện Đăng nhập;
+
+|Người dùng (User)|
+repeat
+    :Nhập Username và Password;
+    :Nhấn nút "Đăng nhập";
+
+    |Hệ thống Coffee Mango|
+    :Tiếp nhận thông tin & Đối soát Database;
+
+    if (Xác thực thành công?) then (Đúng)
+        :Tạo SecurityContext & Lưu Session;
+        :Phân tích vai trò (Admin / Manager / Staff);
+        :Điều hướng đến không gian làm việc;
+        
+        |Người dùng (User)|
+        :Truy cập Dashboard / POS theo quyền;
+        stop
+    else (Sai)
+        |Hệ thống Coffee Mango|
+        :Thông báo: "Sai thông tin đăng nhập, vui lòng nhập lại";
+        |Người dùng (User)|
+    endif
+repeat while (Thử lại)
+
+@enduml

@@ -1,0 +1,144 @@
+@startuml UseCase_TongQuat
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor white
+
+title Hệ thống quản lý Coffee Mango
+
+left to right direction
+
+actor Admin as admin
+actor Manager as manager
+actor Staff as staff
+
+package "Hệ thống quản lý Coffee Mango" {
+
+  usecase "Quản lý nhân viên" as UC1
+  usecase "Vô hiệu hóa tài khoản" as UC1_1
+  usecase "Sửa nhân viên" as UC1_2
+  usecase "Thêm nhân viên" as UC1_3
+  usecase "Lọc theo khoảng thời gian" as UC1_4
+
+  usecase "Xem thống kê doanh thu" as UC2
+  usecase "Xem biểu đồ" as UC2_1
+
+  usecase "AI Assistant" as UC3
+  usecase "Thu thập dữ liệu từ DB" as UC3_1
+  usecase "Gửi Gemini API" as UC3_2
+
+  usecase "Hủy hóa đơn" as UC4
+  usecase "Tạo hóa đơn" as UC4_1
+
+  usecase "Quản lý hóa đơn" as UC5
+  usecase "Xem chi tiết hóa đơn" as UC5_1
+
+  usecase "In hóa đơn" as UC6
+
+  usecase "Quản lý nguyên liệu" as UC7
+  usecase "Thêm nguyên liệu" as UC7_1
+  usecase "Xóa nguyên liệu" as UC7_2
+  usecase "Sửa nguyên liệu" as UC7_3
+
+  usecase "Cảnh báo sắp hết" as UC8
+
+  usecase "Quản lý danh mục" as UC9
+  usecase "Sửa danh mục" as UC9_1
+  usecase "Thêm danh mục" as UC9_2
+  usecase "Ẩn danh mục" as UC9_3
+
+  usecase "Đăng nhập" as UC10
+
+  usecase "Quản lý sản phẩm" as UC11
+  usecase "Thêm sản phẩm" as UC11_1
+  usecase "Tìm kiếm sản phẩm" as UC11_2
+  usecase "Ẩn sản phẩm" as UC11_3
+  usecase "Sửa sản phẩm" as UC11_4
+
+  usecase "Đăng xuất" as UC12
+  
+  usecase "Xem Dashboard" as UC13
+  
+  usecase "Quản lý bàn" as UC14
+  usecase "Thêm bàn" as UC14_1
+  usecase "Sửa bàn" as UC14_2
+  usecase "Xóa bàn" as UC14_3
+  usecase "Xem trạng thái bàn" as UC14_4
+
+}
+
+' Admin - use cases
+admin --> UC1
+admin --> UC2
+admin --> UC3
+admin --> UC4
+admin --> UC5
+admin --> UC6
+admin --> UC7
+admin --> UC8
+admin --> UC9
+admin --> UC10
+admin --> UC11
+admin --> UC12
+admin --> UC13
+admin --> UC14
+
+' Manager - use cases
+manager --> UC2
+manager --> UC3
+manager --> UC5
+manager --> UC6
+manager --> UC7
+manager --> UC8
+manager --> UC9
+manager --> UC10
+manager --> UC11
+manager --> UC12
+manager --> UC13
+manager --> UC14
+
+' Staff - use cases
+staff --> UC5
+staff --> UC10
+staff --> UC12
+staff --> UC13
+staff --> UC14_4
+
+' Include relationships
+UC1 .> UC1_1 : <<include>>
+UC1 .> UC1_2 : <<include>>
+UC1 .> UC1_3 : <<include>>
+UC1 .> UC1_4 : <<include>>
+
+UC2 .> UC2_1 : <<include>>
+
+UC3 .> UC3_1 : <<include>>
+UC3_1 .> UC3_2 : <<include>>
+
+UC4 .> UC4_1 : <<include>>
+
+UC5 .> UC5_1 : <<include>>
+
+UC7 .> UC7_1 : <<include>>
+UC7 .> UC7_2 : <<include>>
+UC7 .> UC7_3 : <<include>>
+
+UC9 .> UC9_1 : <<include>>
+UC9 .> UC9_2 : <<include>>
+UC9 .> UC9_3 : <<include>>
+
+UC11 .> UC11_1 : <<include>>
+UC11 .> UC11_2 : <<include>>
+UC11 .> UC11_3 : <<include>>
+UC11 .> UC11_4 : <<include>>
+
+UC14 .> UC14_1 : <<include>>
+UC14 .> UC14_2 : <<include>>
+UC14 .> UC14_3 : <<include>>
+UC14 .> UC14_4 : <<include>>
+
+' Extend relationships
+UC5 .> UC6 : <<extend>>
+UC5_1 .> UC4 : <<extend>>
+UC8 .> UC13 : <<extend>>
+
+@enduml

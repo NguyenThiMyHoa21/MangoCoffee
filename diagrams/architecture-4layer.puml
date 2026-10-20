@@ -1,0 +1,100 @@
+@startuml
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+
+skinparam package {
+    BorderColor #8C532B
+    BorderThickness 1.5
+    FontSize 13
+    FontStyle bold
+}
+
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #8C532B
+    BorderThickness 1.2
+    ArrowColor #8C532B
+    FontSize 12
+}
+
+skinparam database {
+    BackgroundColor #FFF7ED
+    BorderColor #8C532B
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam node {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    FontSize 12
+    FontStyle bold
+}
+
+package "1. Tầng Trình diễn (Presentation Layer)" #FFFDF8 {
+    component "Giao diện Bán hàng POS\n(HTML5, CSS3, Thymeleaf)" as POS_UI
+    component "Dashboard & Thống kê\n(Bootstrap 5, Chart.js)" as Dash_UI
+    component "Khung Chat Trợ lý AI\n(Thymeleaf, JavaScript, CSS)" as AI_UI
+    component "Quản lý Bàn & Thực đơn\n(Modal, Responsive Grid)" as Menu_UI
+}
+
+package "2. Tầng Điều khiển (Controller Layer)" #FFF7ED {
+    component "Spring Security Filter\n(Xác thực & Phân quyền Role)" as SecurityFilter
+    component "OrderController\n(Xử lý đơn hàng & POS)" as OrderCtrl
+    component "RevenueController\n(Xuất dữ liệu biểu đồ)" as RevCtrl
+    component "AIChatController\n(Tiếp nhận prompt & chat)" as AICtrl
+    component "InventoryController\n(Quản lý kho & nguyên liệu)" as InvCtrl
+}
+
+package "3. Tầng Nghiệp vụ (Service Layer)" #FFEDD5 {
+    component "OrderService\n(Tính tiền, giảm giá, in hóa đơn)" as OrderSvc
+    component "RevenueService\n(Thống kê theo mốc thời gian)" as RevSvc
+    component "GeminiAIService\n(Context Injection & Failover)" as AISvc
+    component "InventoryService\n(Trừ kho, báo động mức min)" as InvSvc
+    component "TableService\n(Đổi trạng thái, chuyển bàn)" as TableSvc
+}
+
+package "4. Tầng Truy xuất Dữ liệu (Repository Layer - Spring Data JPA)" #FED7AA {
+    component "OrderRepository &\nOrderDetailRepository" as OrderRepo
+    component "IngredientRepository" as IngRepo
+    component "ProductRepository &\nCategoryRepository" as ProdRepo
+    component "UserRepository &\nDiningTableRepository" as UserRepo
+}
+
+database "Cơ sở dữ liệu\nMySQL 8.0" as MySQL
+node "Google Cloud Platform\nGemini 2.5 Flash API" as GeminiAPI
+
+POS_UI --> SecurityFilter : HTTP Request (JSON/Form)
+Dash_UI --> SecurityFilter
+AI_UI --> SecurityFilter
+Menu_UI --> SecurityFilter
+
+SecurityFilter --> OrderCtrl : Điều phối (Authenticated)
+SecurityFilter --> RevCtrl
+SecurityFilter --> AICtrl
+SecurityFilter --> InvCtrl
+
+OrderCtrl --> OrderSvc : Gọi logic đơn hàng
+OrderCtrl --> TableSvc
+RevCtrl --> RevSvc : Lấy báo cáo doanh thu
+AICtrl --> AISvc : Gửi câu hỏi & phân tích
+InvCtrl --> InvSvc : Cập nhật tồn kho
+
+OrderSvc --> OrderRepo : CRUD hóa đơn
+OrderSvc --> InvSvc : Kích hoạt trừ kho
+RevSvc --> OrderRepo : Truy vấn doanh thu
+InvSvc --> IngRepo : Cập nhật số lượng tồn
+TableSvc --> UserRepo : Cập nhật trạng thái bàn
+
+AISvc ..> IngRepo : Đọc nguyên liệu báo động đỏ
+AISvc ..> OrderRepo : Đọc Top món bán chạy
+AISvc --> GeminiAPI : REST API (Bơm Prompt + Dữ liệu)
+AISvc ..> AISvc : Thuật toán Failover (Khi API lỗi)
+
+OrderRepo --> MySQL : JDBC / SQL
+IngRepo --> MySQL
+ProdRepo --> MySQL
+UserRepo --> MySQL
+@enduml

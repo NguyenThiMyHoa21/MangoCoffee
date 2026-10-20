@@ -1,0 +1,81 @@
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Danh mục | Coffee Mango</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div class="d-flex">
+    <div th:replace="~{layout/sidebar :: sidebar(activePage='categories')}"></div>
+    <main class="flex-grow-1 main-content">
+        <div th:replace="~{layout/topnav :: topnav}"></div>
+        <div class="p-4">
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+                <i class="bi bi-check-circle me-2"></i><span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+                <i class="bi bi-exclamation-circle me-2"></i><span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold mb-0"><i class="bi bi-tags me-2 text-secondary"></i>Quản lý danh mục</h4>
+                <a th:href="@{/categories/create}" class="btn btn-coffee"
+                   sec:authorize="hasAnyRole('ADMIN', 'MANAGER')">
+                    <i class="bi bi-plus-lg me-1"></i>Thêm danh mục
+                </a>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Tên danh mục</th>
+                                <th>Mô tả</th>
+                                <th class="text-center">Trạng thái</th>
+                                <th class="text-center" sec:authorize="hasAnyRole('ADMIN', 'MANAGER')">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(categories)}">
+                                <td colspan="5" class="text-center text-muted py-4">Chưa có danh mục nào</td>
+                            </tr>
+                            <tr th:each="cat, stat : ${categories}">
+                                <td th:text="${stat.index + 1}"></td>
+                                <td class="fw-semibold" th:text="${cat.name}"></td>
+                                <td class="text-muted" th:text="${cat.description}"></td>
+                                <td class="text-center">
+                                    <span th:if="${cat.active}" class="badge bg-success">Hoạt động</span>
+                                    <span th:unless="${cat.active}" class="badge bg-secondary">Ẩn</span>
+                                </td>
+                                <td class="text-center" sec:authorize="hasAnyRole('ADMIN', 'MANAGER')">
+                                    <a th:href="@{/categories/edit/{id}(id=${cat.id})}"
+                                       class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form th:action="@{/categories/delete/{id}(id=${cat.id})}"
+                                          method="post" class="d-inline"
+                                          onsubmit="return confirm('Xóa danh mục này?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

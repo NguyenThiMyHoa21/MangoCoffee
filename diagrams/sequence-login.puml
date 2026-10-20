@@ -1,0 +1,98 @@
+@startuml Sequence_DangNhap
+autonumber
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+
+skinparam participant {
+    BackgroundColor #FFF7ED
+    BorderColor #8C532B
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam actor {
+    BackgroundColor #FFF7ED
+    BorderColor #8C532B
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam database {
+    BackgroundColor #FFF7ED
+    BorderColor #8C532B
+    FontSize 12
+}
+
+skinparam arrow {
+    Color #8C532B
+    FontColor #8C532B
+}
+
+actor "Người dùng\n(User)" as User
+boundary "Giao diện Login\n(:LoginPage)" as View
+control "AuthController\n(:Controller)" as Controller
+control "Spring Security\n(:AuthManager)" as Security
+control "UserDetailsService\n(:Service)" as Service
+entity "UserRepository\n(:Repository)" as Repo
+database "Cơ sở dữ liệu\n(MySQL)" as DB
+
+User -> View : 1. Truy cập trang đăng nhập (/login)
+activate View
+View --> User : 2. Hiển thị form đăng nhập
+deactivate View
+
+User -> View : 3. Nhập username, password và bấm "Đăng nhập"
+activate View
+View -> Controller : 4. Gửi POST /login (username, password)
+activate Controller
+
+Controller -> Security : 5. authenticate(username, password)
+activate Security
+
+Security -> Service : 6. loadUserByUsername(username)
+activate Service
+
+Service -> Repo : 7. findByUsername(username)
+activate Repo
+
+Repo -> DB : 8. SELECT * FROM users WHERE username = ?
+activate DB
+DB --> Repo : 9. Trả về dữ liệu người dùng (hoặc null)
+deactivate DB
+
+Repo --> Service : 10. User entity
+deactivate Repo
+
+Service --> Security : 11. UserDetails
+deactivate Service
+
+alt #FFF5F5 Tài khoản không tồn tại
+    Security --> Controller : Ném UsernameNotFoundException
+    Controller --> View : Chuyển hướng /login?error=notfound
+    View --> User : Hiển thị "Tài khoản không tồn tại"
+
+else #FFFBEB Tài khoản bị vô hiệu hóa
+    Security --> Controller : Ném DisabledException
+    Controller --> View : Chuyển hướng /login?error=disabled
+    View --> User : Hiển thị "Tài khoản đã bị khóa"
+
+else #FEF2F2 Sai mật khẩu
+    Security -> Security : Đối soát hash mật khẩu (BCrypt)
+    Security --> Controller : Ném BadCredentialsException
+    Controller --> View : Chuyển hướng /login?error=badcredentials
+    View --> User : Hiển thị "Mật khẩu không chính xác"
+
+else #F0FDF4 Đăng nhập thành công
+    Security -> Security : Khởi tạo Authentication & SecurityContext
+    Security --> Controller : Xác thực thành công (Authentication)
+    deactivate Security
+    
+    Controller --> View : Redirect Dashboard theo Role (ADMIN / MANAGER / STAFF)
+    deactivate Controller
+    
+    View --> User : Hiển thị không gian làm việc theo vai trò
+    deactivate View
+end
+@enduml
