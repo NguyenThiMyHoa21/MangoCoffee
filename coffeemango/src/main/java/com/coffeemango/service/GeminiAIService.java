@@ -43,6 +43,14 @@ public class GeminiAIService {
     /**
      * Hỏi đáp tự do - AI Assistant nhận diện danh tính và vai trò người dùng
      */
+    // =========================================================================================
+    // [VẤN ĐÁP - CHỖ 1]: TIÊM DỮ LIỆU & NHẬN DIỆN VAI TRÒ (CONTEXT INJECTION & PROMPT GUARD)
+    // -----------------------------------------------------------------------------------------
+    // - Lấy Role từ Spring Security (ADMIN, MANAGER, STAFF).
+    // - NẾU LÀ STAFF: Cắt bỏ hoàn toàn biến doanh thu, thêm luật cấm AI tiết lộ tài chính.
+    // - NẠP SỐ LIỆU THỰC (Ground Truth): Truy vấn MySQL lấy Doanh thu 7 ngày, Top món bán chạy
+    //   đóng gói vào System Prompt trước khi gửi tới Gemini API (chống ảo giác Hallucination).
+    // =========================================================================================
     public String askQuestion(String question, User currentUser) {
         if (apiKey == null || apiKey.equals("YOUR_GEMINI_API_KEY") || apiKey.isBlank() || apiKey.length() < 10) {
             return "⚠️ Chưa cấu hình Gemini API Key. Vui lòng điền key vào application.properties.";
@@ -111,6 +119,11 @@ public class GeminiAIService {
         return callGeminiAPI(context.toString());
     }
 
+    // =========================================================================================
+    // [VẤN ĐÁP]: TÍNH NĂNG 2 - AI PHÂN TÍCH DOANH THU & TƯ VẤN KINH DOANH (/revenue)
+    // - Tính tỷ lệ % tăng/giảm so với tuần trước, lấy Top món bán chạy và biểu đồ theo ngày.
+    // - Prompt yêu cầu AI trả về 3 phần: 1. Điểm sáng, 2. Rủi ro, 3. Đề xuất 3 hành động cụ thể.
+    // =========================================================================================
     public String analyzeRevenue(LocalDateTime start, LocalDateTime end) {
         // Kiểm tra API key
         if (apiKey == null || apiKey.equals("YOUR_GEMINI_API_KEY") || apiKey.isBlank() || apiKey.length() < 10) {
@@ -190,6 +203,12 @@ public class GeminiAIService {
     /**
      * AI Đánh giá Tồn kho & Dự trù Kế hoạch Nhập hàng
      */
+    // =========================================================================================
+    // [VẤN ĐÁP]: TÍNH NĂNG 1 - AI ĐÁNH GIÁ KHO & DỰ TRÙ NHẬP HÀNG THEO CHUẨN FIFO (/ingredients)
+    // - Lọc nguyên liệu có Tồn kho <= Mức tối thiểu (báo động đỏ).
+    // - Đối chiếu với Top món bán chạy tuần qua để AI ưu tiên nhập nguyên liệu cấp bách.
+    // - AI gợi ý mẹo bảo quản theo quy tắc FIFO (Nhập trước - Xuất trước).
+    // =========================================================================================
     public String analyzeInventory() {
         if (apiKey == null || apiKey.equals("YOUR_GEMINI_API_KEY") || apiKey.isBlank() || apiKey.length() < 10) {
             return "⚠️ Chưa cấu hình Gemini API Key. Vui lòng điền key vào application.properties.";
@@ -233,6 +252,14 @@ public class GeminiAIService {
     }
 
     @SuppressWarnings("unchecked")
+    // =========================================================================================
+    // [VẤN ĐÁP - CHỖ 2]: GỌI WEBCLIENT & THUẬT TOÁN DỰ PHÒNG (MULTI-MODEL FAILOVER)
+    // -----------------------------------------------------------------------------------------
+    // - Khai báo danh sách Model dự phòng (gemini-flash-lite, gemini-3.5-flash-lite, gemini-3.5-flash...).
+    // - Dùng Spring WebClient gọi REST API bất đồng bộ (Non-blocking).
+    // - Vòng lặp for: Nếu gặp lỗi 503 (quá tải) hoặc 429 (hết quota) -> Tự động continue sang model tiếp theo.
+    // - Đảm bảo hệ thống KHÔNG BAO GIỜ bị crash khi Google AI gặp sự cố.
+    // =========================================================================================
     private String callGeminiAPI(String prompt) {
         List<String> targetUrls = new ArrayList<>();
         if (apiUrl != null && !apiUrl.isBlank()) {

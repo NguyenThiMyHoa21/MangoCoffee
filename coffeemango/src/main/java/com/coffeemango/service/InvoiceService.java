@@ -33,6 +33,14 @@ public class InvoiceService {
         return invoiceRepository.findByCreatedAtBetween(start, end);
     }
 
+    // =========================================================================================
+    // [VẤN ĐÁP]: QUY TRÌNH TẠO HÓA ĐƠN POS, TÍNH TIỀN VÀ TRỪ GIẢM GIÁ
+    // -----------------------------------------------------------------------------------------
+    // 1. Tự sinh mã hóa đơn duy nhất: generateInvoiceCode() -> Dạng INV-xxxxxx
+    // 2. Tính tổng tiền: Dùng Java Stream duyệt qua từng món (đơn giá * số lượng)
+    // 3. Tính tiền thực thu: FinalAmount = TotalAmount - Discount (trừ chiết khấu giảm giá)
+    // 4. Lưu InvoiceDetail và lưu Invoice vào MySQL qua invoiceRepository.save()
+    // =========================================================================================
     public Invoice createInvoice(Invoice invoice) {
         invoice.setInvoiceCode(generateInvoiceCode());
         invoice.setStatus(Invoice.InvoiceStatus.PENDING);

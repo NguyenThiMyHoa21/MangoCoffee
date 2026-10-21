@@ -21,6 +21,12 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
 
     @Bean
+    // =========================================================================================
+    // [VẤN ĐÁP - CHỖ 1]: MÃ HÓA MẬT KHẨU BẰNG THUẬT TOÁN BCRYPT
+    // -----------------------------------------------------------------------------------------
+    // - Dùng BCryptPasswordEncoder mã hóa một chiều an toàn với Salt ngẫu nhiên (độ phức tạp 10).
+    // - Ngăn chặn tấn công tra cứu bảng Rainbow Table, mật khẩu trong MySQL luôn là chuỗi băm.
+    // =========================================================================================
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
@@ -39,6 +45,14 @@ public class SecurityConfig {
     }
 
     @Bean
+    // =========================================================================================
+    // [VẤN ĐÁP - CHỖ 2]: PHÂN QUYỀN URL DỰA TRÊN VAI TRÒ (RBAC - ROLE-BASED ACCESS CONTROL)
+    // -----------------------------------------------------------------------------------------
+    // - /staff/**, /tables/manage/**       -> Chỉ ADMIN (Chủ quán mới quản lý nhân sự & cấu hình bàn)
+    // - /revenue/**                        -> Chỉ ADMIN, MANAGER (Nhân viên STAFF bị chặn 403 Forbidden)
+    // - /products/**, /ingredients/**      -> ADMIN, MANAGER mới được Thêm/Sửa/Xóa
+    // - /ai/**, /dashboard, /invoices/**   -> Cả 3 Role đều được dùng (STAFF phục vụ bán hàng POS)
+    // =========================================================================================
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authenticationProvider(authenticationProvider())
